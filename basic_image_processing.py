@@ -51,6 +51,8 @@ def main():
 def list_of_files(folder):
   matches = []
   for root, dirnames, filenames in os.walk(folder):
+    filenames = [f for f in filenames if not f[0] == '.']
+    dirnames[:] = [d for d in dirnames if not d[0] == '.']
     for filename in filenames:
       matches.append(os.path.join(root, filename))
   return matches
