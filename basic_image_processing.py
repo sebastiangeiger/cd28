@@ -11,23 +11,26 @@ def process_cd28_image(image_path):
   read_process_save(image_path, process)
 
 def process_cd8_image(image_path):
-  process = lambda image: shared_processing(image, gaussian_blur_radius = 5)
+  process = lambda image: shared_processing(image, gaussian_blur_radius = 1)
   read_process_save(image_path, process)
 
 def shared_processing(image, gaussian_blur_radius = 7, laplace_kernel_size = 5, threshold = 80, median_blur_radius = 3):
   image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+  just_thresholded = cv2.convertScaleAbs(image)
+  ret,just_thresholded = cv2.threshold(just_thresholded,40,255,cv2.THRESH_BINARY)
   gaussian = cv2.GaussianBlur(image,(gaussian_blur_radius,gaussian_blur_radius),0)
   laplacian_of_gaussian = cv2.Laplacian(gaussian, cv2.CV_16S, ksize = laplace_kernel_size, scale = 1, delta = 0)
   absolute_values = cv2.convertScaleAbs(laplacian_of_gaussian)
   ret,thresholded = cv2.threshold(absolute_values,threshold,255,cv2.THRESH_BINARY)
   median = cv2.medianBlur(thresholded,median_blur_radius)
-  return thresholded, median
+  return thresholded, median, just_thresholded
 
 def read_process_save(image_path, process):
-  thresholded, median = process(cv2.imread(image_path))
+  thresholded, median, just_thresholded = process(cv2.imread(image_path))
   without_extension = os.path.splitext(image_path)[0]
   cv2.imwrite(without_extension + ' thresholded.png', thresholded)
   cv2.imwrite(without_extension + ' median.png', median)
+  cv2.imwrite(without_extension + ' just_thresholded.png', just_thresholded)
 
 def main():
   files = list_of_files(sys.argv[1])
