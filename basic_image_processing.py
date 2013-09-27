@@ -30,36 +30,35 @@ def shared_processing(image, gaussian_blur_radius = 7, laplace_kernel_size = 5, 
       }
 
 def read_process_save(image_path, process):
-  processed_images = process(cv2.imread(image_path))
+  if not os.path.isfile(image_path):
+    raise Exception(image_path + " is not a file")
+  image = cv2.imread(image_path)
+  processed_images = process(image)
   without_extension = os.path.splitext(image_path)[0]
   for processing_step, image in processed_images.iteritems():
     cv2.imwrite(without_extension + ' ' + processing_step + '.png', image)
   return processed_images
 
 def main():
-  files = list_of_files(sys.argv[1])
-  for file in files:
-    basename = os.path.basename(file)
-    if basename.endswith(".tif"):
-      if "CD28" in basename:
-        print "Processing {0} as CD28".format(basename)
-        process_cd28_image(file)
-      elif "CD8" in basename:
-        print "Processing {0} as CD8".format(basename)
-        process_cd8_image(file)
-      else:
-        print "Skipping " + basename
-    else:
-      print "Skipping " + basename
+  pairs = identify_pairs(sys.argv[1])
+  for pair in pairs:
+    determine_overlap(process_cd8_image(pair[0]),process_cd28_image(pair[1]))
 
-def list_of_files(folder):
-  matches = []
-  for root, dirnames, filenames in os.walk(folder):
-    filenames = [f for f in filenames if not f[0] == '.']
-    dirnames[:] = [d for d in dirnames if not d[0] == '.']
-    for filename in filenames:
-      matches.append(os.path.join(root, filename))
-  return matches
+def determine_overlap(cd_8_image,cd_28_image):
+  print "would determine_overlap here"
+
+def identify_pairs(folder):
+  identifiers = ["CD28","CD8"]
+  pairs = []
+  for dirpath, dirnames, filenames in os.walk(folder):
+    pair = []
+    for identifier in identifiers:
+      matching_files = [f for f in filenames if identifier in f and f.endswith('.tif') ]
+      if len(matching_files) > 0:
+        pair.append(os.path.join(dirpath, matching_files[0]))
+    if len(pair) == len(identifiers):
+      pairs.append(pair)
+  return pairs
 
 if  __name__ =='__main__':
   main()
