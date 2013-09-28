@@ -44,8 +44,29 @@ def main():
   for pair in pairs:
     determine_overlap(process_cd8_image(pair[0]),process_cd28_image(pair[1]))
 
-def determine_overlap(cd_8_image,cd_28_image):
-  print "would determine_overlap here"
+def determine_overlap(cd_8_images,cd_28_images):
+  cd_8_image = cd_8_images["median"].astype(np.int32)
+  cd_28_image = cd_28_images["median"].astype(np.int32)
+  assert (np.unique(cd_8_image) == [0, 255]).all(), \
+    "Expected the image to only have the values 0 and 255"
+  assert (np.unique(cd_28_image) == [0, 255]).all(), \
+    "Expected the image to only have the values 0 and 255"
+  # Multiplying cd_28_image with 2 yields the values 0 and 510
+  # When the two matrices are added up this results in the following:
+  # 0: Pixel black in CD8 and in CD28
+  # 255: Pixel white in CD8, black in CD28
+  # 510: Pixel white in CD28, black in CD8
+  # 765: Pixel white in CD8 and CD28
+  summed = np.add(cd_8_image, np.multiply(cd_28_image,2))
+  hist, bins = np.histogram(summed, bins=[0,127,383,639,895])
+  both_black       = hist[0]
+  black_28_white_8 = hist[1]
+  white_28_black_8 = hist[2]
+  both_white       = hist[3]
+  total = black_28_white_8 + white_28_black_8 + both_white
+  print "Overlap: {0}".format(float(both_white)/total*100)
+  print "Positive in CD 8: {0}".format(float(black_28_white_8)/total*100)
+  print "Positive in CD 28: {0}".format(float(white_28_black_8)/total*100)
 
 def identify_pairs(folder):
   identifiers = ["CD28","CD8"]
