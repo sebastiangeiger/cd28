@@ -5,6 +5,7 @@ import numpy as np
 import fnmatch
 import os
 import re
+import csv
 
 def process_cd28_image(image_path):
   process = lambda image: shared_processing(image, gaussian_blur_radius = 7)
@@ -41,12 +42,16 @@ def read_process_save(image_path, process):
 
 def main():
   pairs = identify_pairs(sys.argv[1])
+  accumulated = {}
   for pair in pairs:
-    determine_overlap(process_cd8_image(pair[0]),process_cd28_image(pair[1]))
+    overlaps = determine_overlap(process_cd8_image(pair[0])["median"],
+        process_cd28_image(pair[1])["median"])
+    accumulated[pair[0]] = overlaps
+  save_analysis(accumulated)
 
-def determine_overlap(cd_8_images,cd_28_images):
-  cd_8_image = cd_8_images["median"].astype(np.int32)
-  cd_28_image = cd_28_images["median"].astype(np.int32)
+def determine_overlap(cd_8_image,cd_28_image):
+  cd_8_image = cd_8_image.astype(np.int32)
+  cd_28_image = cd_28_image.astype(np.int32)
   assert (np.unique(cd_8_image) == [0, 255]).all(), \
     "Expected the image to only have the values 0 and 255"
   assert (np.unique(cd_28_image) == [0, 255]).all(), \
@@ -64,9 +69,11 @@ def determine_overlap(cd_8_images,cd_28_images):
   white_28_black_8 = hist[2]
   both_white       = hist[3]
   total = black_28_white_8 + white_28_black_8 + both_white
-  print "Overlap: {0}".format(float(both_white)/total*100)
-  print "Positive in CD 8: {0}".format(float(black_28_white_8)/total*100)
-  print "Positive in CD 28: {0}".format(float(white_28_black_8)/total*100)
+  return {
+      "in both": float(both_white)/total*100,
+      "in cd8 but not in cd28": float(black_28_white_8)/total*100,
+      "in cd28 but not in cd8": float(white_28_black_8)/total*100
+      }
 
 def identify_pairs(folder):
   identifiers = ["CD28","CD8"]
@@ -81,5 +88,29 @@ def identify_pairs(folder):
       pairs.append(pair)
   return pairs
 
+def save_analysis(results):
+  with open('analysis.csv', 'wb') as csvfile:
+    spamwriter = csv.writer(csvfile, delimiter=',', quotechar='"',
+        quoting=csv.QUOTE_MINIMAL)
+    result_categories = results[results.keys()[0]].keys()
+    spamwriter.writerow(['filename']+result_categories)
+    for file_name, result_for_file in results.iteritems():
+      row = [file_name]
+      for category in result_categories:
+        row.append(result_for_file[category])
+      spamwriter.writerow(row)
+
+# def just_threshold(image):
+#   image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+#   image = cv2.convertScaleAbs(image)
+#   ret,image = cv2.threshold(image,40,255,cv2.THRESH_BINARY)
+#   return image
+#
+# def overlap_test():
+#   A = just_threshold(cv2.imread("test images/S.tif"))
+#   B = just_threshold(cv2.imread("test images/B.tif"))
+#   print determine_overlap(A,B)
+
 if  __name__ =='__main__':
+  # overlap_test()
   main()
