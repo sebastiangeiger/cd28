@@ -1,5 +1,16 @@
 import cv2
 import numpy as np
+from scipy.stats.stats import pearsonr
+
+def pearson_overlap(cd_8_image,cd_28_image):
+  assert cd_8_image.size == cd_28_image.size
+  size = [cd_8_image.size,1]
+  cd_8_image = np.reshape(cd_8_image, size)
+  cd_28_image = np.reshape(cd_28_image, size)
+  r, p_values = pearsonr(cd_8_image, cd_28_image)
+  return {
+      "pearsons r value": r[0]
+      }
 
 def pixelwise_overlap(cd_8_image,cd_28_image):
   cd_8_image = cd_8_image.astype(np.int32)
@@ -36,7 +47,7 @@ def just_threshold(image):
 def overlap_test():
   A = just_threshold(cv2.imread("test images/S.tif"))
   B = just_threshold(cv2.imread("test images/B.tif"))
-  print determine_overlap(A,B)
+  print pixelwise_overlap(A,B)
 
 if  __name__ =='__main__':
   overlap_test()

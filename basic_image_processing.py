@@ -45,7 +45,7 @@ def main():
   pairs = identify_pairs(sys.argv[1])
   accumulated = {}
   for pair in pairs:
-    overlaps = overlap.pixelwise_overlap(process_cd8_image(pair[0])["median"],
+    overlaps = overlap.pearson_overlap(process_cd8_image(pair[0])["median"],
         process_cd28_image(pair[1])["median"])
     accumulated[pair[0]] = overlaps
   save_analysis(accumulated)
@@ -65,15 +65,15 @@ def identify_pairs(folder):
 
 def save_analysis(results):
   with open('analysis.csv', 'wb') as csvfile:
-    spamwriter = csv.writer(csvfile, delimiter=',', quotechar='"',
+    writer = csv.writer(csvfile, delimiter=',', quotechar='"',
         quoting=csv.QUOTE_MINIMAL)
     result_categories = results[results.keys()[0]].keys()
-    spamwriter.writerow(['filename']+result_categories)
+    writer.writerow(['filename']+result_categories)
     for file_name, result_for_file in results.iteritems():
       row = [file_name]
       for category in result_categories:
         row.append(result_for_file[category])
-      spamwriter.writerow(row)
+      writer.writerow(row)
 
 if  __name__ =='__main__':
   main()
